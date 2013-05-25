@@ -2,12 +2,21 @@
 
 # On construit l'URL pour l'API YouTube :
 temp=$(echo "$*" | sed -e "s/ /+/g")
-surl="https://gdata.youtube.com/feeds/api/videos?q=$temp&max-results=1"
+surl="https://gdata.youtube.com/feeds/api/videos?q=$temp&max-results=10"
 
-# On récupère l'URL de la première vidéo correspondant au termes recherchés :
+# On récupère la résultat de l'API YouTube :
 wget -q --no-check-certificate -O .youtube "$surl"
 xmlstarlet fo .youtube > .youtube.nice
-vurl=$(cat .youtube.nice | grep "<link rel=\"alternate\"" | grep gdata | cut -d "\"" -f 6)
+
+# On récupère le résultat désiré :
+cat .youtube.nice | grep title | grep text | sed "s/<title type=\"text\">//" | sed "s/<\/title>//" 
+echo "Entrez le numéro du résultat désiré : "
+read res
+echo "Vous avez choisi $(( res % 10))"
+
+
+vurls=$(cat .youtube.nice | grep "<link rel=\"alternate\"" | grep gdata | cut -d "\"" -f 6)
+vurl=$(cat .youtube.nice | grep "<link rel=\"alternate\"" | grep gdata | cut -d "\"" -f 6 | sed -n "$((res))p")
 
 # Afficher les commandes clavier :
 echo "p: pause"
@@ -18,8 +27,7 @@ echo "gauche et droite: +/- 10secondes"
 # Playback time !
 cookiefile="/tmp/cookies-$( date +%s.%N ).txt";
 url=$( youtube-dl --cookies $cookiefile -g "$vurl" );
-mplayer -really-quiet -cookies -cookies-file $cookiefile -vo null $url;
+mplayer -cookies -cookies-file $cookiefile -vo null $url;
 rm -f $cookiefile
-rm -f .youtube
-rm -f .youtube.nice
-
+rm .youtube
+rm .youtube.nice
